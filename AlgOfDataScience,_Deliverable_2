@@ -1,0 +1,179 @@
+Credibility Assessment System: Technical Report
+
+1. Objective
+The objective of this report is to provide an in-depth analysis of the algorithmic approach underpinning the credibility assessment system. This includes both the rule-based and optional machine-learning components, the scientific justification for feature selection, scoring mechanisms, and decision thresholds. The report also outlines best practices in the domain, identifies limitations in existing models, and provides guidance for iterative improvements.
+
+2. Algorithmic Approach
+2.1 Overview
+The credibility scoring system evaluates online articles based on multiple signals indicative of reliability and objectivity. The core approach is rule-based, integrating a combination of domain reputation, evidence, transparency, quality, recency, and objectivity. Each factor is weighted and aggregated into a final credibility score on a 0–100 scale, complemented by a 0–5 star objectivity rating.
+The system also includes heuristic penalties to account for clickbait, paywalls, and excessive sensationalism.
+2.2 Feature Selection
+Feature
+Type
+Description
+domain / outlet_type
+categorical
+Trustworthiness of domain, inferred from TLD (.gov/.edu) and outlet type (university, news, blog)
+published_at / updated_at
+datetime
+Recency of the article, scored exponentially based on age
+has_byline / has_about_page / has_contact_info / corrections_policy
+boolean
+Transparency indicators showing accountability
+cites_sources_count / links_to_primary_sources / quotes_named_experts
+integer
+Evidence of sourcing and expert opinion
+advertising_density
+float
+Penalizes excessive advertising as a proxy for lower credibility
+uses_stock_images_only / is_press_release
+boolean
+Reduces score for low-quality content or PR material
+clickbait_score / subjectivity_score / polarity_score
+float
+Measures sensationalism and opinion bias
+paywalled
+boolean
+Minor penalty for restricted access
+
+2.3 Scoring Mechanisms
+Domain Score: Trusted TLDs (.gov, .edu) → +0.85; suspect TLDs (e.g., .zip, .click) → ≤ 0.35; outlet type adjustments for universities/journals and blogs/social media.
+
+
+Evidence Score: Uses exponential decay formula: score = 1 - exp(-k * count); weighted aggregation: citations 45%, primary sources 35%, expert quotes 20%.
+
+
+Transparency Score: Adds points for byline, about page, contact info, corrections policy (max 1.0).
+
+
+Quality Score: Adjusted for advertising density, stock images, press release markers.
+
+
+Recency Score: Continuous score based on age of publication.
+
+
+Age
+Score
+< 30 days
+1.0
+≤ 6 months
+0.85
+≤ 2 years
+0.7
+≤ 5 years
+0.5
+> 5 years
+0.3
+
+
+Objectivity Score: Combines subjectivity, polarity, and editorial cue detection into 0–1 scale, converted to 0–5 stars.
+
+
+Penalties: Minor reductions for clickbait, paywalls, sensational titles.
+
+
+Aggregation: Weighted sum: credibility_0_1 = Σ (weight_i * component_i) - penalties; default weights: domain 0.23, evidence 0.22, transparency 0.18, quality 0.15, recency 0.12, objectivity 0.10.
+
+
+2.4 Algorithm Complexity & Scalability
+Time Complexity: O(n * m), n = articles, m = HTML elements parsed.
+
+
+Scalable via batch processing; parallelization feasible.
+
+
+Minimal external dependencies (requests, BeautifulSoup).
+
+
+
+3. Literature Review
+3.1 Academic Approaches
+Fact-checking models use knowledge bases (ClaimBuster, FEVER) and NLP for semantic analysis.
+
+
+Domain reliability (TLD, outlet type) predicts trustworthiness.
+
+
+Content analysis (sentiment, subjectivity) correlates with bias.
+
+
+Gap: Pure ML approaches may lack interpretability; rule-based approaches miss nuanced patterns.
+
+
+3.2 Industry Implementations
+Google News, AP Fact Check, NewsGuard combine human review and heuristics.
+
+
+Signals: domain reputation, linking patterns, author transparency, sensationalism.
+
+
+Limitation: Many systems are not reproducible or open-source.
+
+
+
+4. Methodology Justification
+Rule-based selection: transparent, reproducible, easy to tune.
+
+
+Optional ML extension: NLP embeddings or classification for subtle misinformation.
+
+
+Trade-offs: Accuracy vs. interpretability; computational cost.
+
+
+Empirical Validation Example:
+Article
+Credibility
+Objectivity
+Rationale
+University study
+48.4
+2.8
+High domain, low evidence, moderate transparency
+AP News
+56.4
+3.25
+Balanced domain and evidence, strong transparency
+
+
+5. Documentation & Future Improvements
+5.1 API Usage
+score_articles(articles): Accepts feature dicts, returns scored articles.
+
+
+extract_article_features_from_url(url): Auto-extracts features.
+
+
+score_articles_from_urls(urls): Batch scoring.
+
+
+5.2 Tunable Parameters
+Weighting (W) per component.
+
+
+Exponential decay constants for evidence scoring.
+
+
+Clickbait and opinion regex patterns.
+
+
+Recency thresholds.
+
+
+5.3 Areas for Improvement
+Integrate NLP embeddings to detect nuanced misinformation.
+
+
+Include social engagement metrics (shares, likes).
+
+
+Adaptive weighting based on domain-specific validation.
+
+
+Continuous updates to trusted/suspect domain lists.
+
+
+
+6. Conclusion
+The credibility assessment system combines rule-based transparency with evidence-driven heuristics, producing reproducible and interpretable scores. It balances multiple facets of quality, recency, and objectivity while remaining computationally efficient. Future hybrid ML integration can address subtle semantic signals and support adaptive model tuning.
+
