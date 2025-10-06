@@ -19,10 +19,14 @@ load_dotenv()
 st.title("GPT Chatbot with Credibility-Rated Web Search 🔍⭐")
 
 # Initialize the OpenAI client
-api_key = os.getenv("OPENAI_API_KEY")
+# Try to get from Streamlit secrets first (for cloud deployment), then fall back to .env
+try:
+    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+except:
+    api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key or api_key == "your_openai_api_key_here":
-    st.error("Please set your OPENAI_API_KEY in the .env file")
+    st.error("Please set your OPENAI_API_KEY in the .env file or Streamlit secrets")
     st.info("Get your API key from: https://platform.openai.com/api-keys")
     st.stop()
 
