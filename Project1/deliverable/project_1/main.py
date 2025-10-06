@@ -40,9 +40,42 @@ with st.sidebar:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Function to fetch article content
+def fetch_article_content(url, timeout=10):
+    """Fetch and extract main content from a URL"""
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=timeout)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Remove script and style elements
+        for script in soup(["script", "style", "nav", "header", "footer"]):
+            script.decompose()
+
+        # Get text from common article containers
+        article_text = ""
+        for tag in ['article', 'main', 'div[class*="content"]', 'div[class*="article"]']:
+            content = soup.select_one(tag)
+            if content:
+                article_text = content.get_text(separator='\n', strip=True)
+                break
+
+        if not article_text:
+            article_text = soup.get_text(separator='\n', strip=True)
+
+        # Limit to first 3000 characters to avoid token limits
+        return article_text[:3000] if article_text else None
+    except Exception:
+        return None
+
 # Function to perform web search
-def web_search(query, max_results=5):
-    """Search the web using DuckDuckGo"""
+def web_search(query, max_results=3):
+    """Search the web using DuckDuckGo and fetch article content"""
     try:
         ddgs = DDGS()
         results = list(ddgs.text(query, max_results=max_results))
@@ -53,8 +86,15 @@ def web_search(query, max_results=5):
         search_summary = ""
         for i, result in enumerate(results, 1):
             search_summary += f"[Source {i}] {result['title']}\n"
-            search_summary += f"{result['body']}\n"
-            search_summary += f"URL: {result['href']}\n\n"
+            search_summary += f"Summary: {result['body']}\n"
+            search_summary += f"URL: {result['href']}\n"
+
+            # Fetch actual article content
+            article_content = fetch_article_content(result['href'])
+            if article_content:
+                search_summary += f"Full Content:\n{article_content}\n"
+
+            search_summary += "\n"
 
         return search_summary
     except Exception as e:
@@ -118,15 +158,16 @@ I have performed a LIVE INTERNET SEARCH and retrieved the following CURRENT, UP-
 === END OF SEARCH RESULTS ===
 
 YOUR TASK:
-1. Read the search results above
-2. Answer the user's question using ONLY this information
-3. DO NOT under ANY circumstances say "I don't have access to real-time information"
-4. DO NOT say "I cannot browse the internet"
-5. DO NOT apologize for not having current data
-6. You MUST use the search results provided above
-7. Cite sources by including the URLs
+1. Read and COMPREHEND the content from the search results above
+2. SYNTHESIZE the information and provide a comprehensive answer based on the actual content
+3. Focus on EXPLAINING what the sources say, not just listing URLs
+4. At the end of your answer, you may mention sources like "Source: [Title]" but DO NOT make URLs the focus
+5. DO NOT under ANY circumstances say "I don't have access to real-time information"
+6. DO NOT say "I cannot browse the internet"
+7. DO NOT apologize for not having current data
+8. You MUST extract and summarize the actual CONTENT from the search results
 
-If you say you don't have internet access, you will be incorrect - the search was already performed and the results are right above."""
+Your response should be a natural, informative answer that incorporates the facts and details from the search results, not just a list of links."""
         messages_for_api.append({"role": "system", "content": system_prompt})
 
     # Add only the LAST user message (not full history when we have search results)
