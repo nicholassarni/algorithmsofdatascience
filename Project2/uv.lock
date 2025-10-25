@@ -7,17 +7,17 @@ name = "project2"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "tinytroupe" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "tinytroupe", specifier = ">=0.0.1" }]
+requires-dist = [{ name = "python-dotenv", specifier = ">=1.1.1" }]
 
 [[package]]
-name = "tinytroupe"
-version = "0.0.1"
+name = "python-dotenv"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d1/47/9d1841a4c104d00538ffe001145c8d3bff12b0e80672dc44a3c723216c45/tinytroupe-0.0.1.tar.gz", hash = "sha256:241edb8778c5cd5fa0af9fbbc34340c00b38211319775ed6efabdd9fabe5bc29", size = 1741, upload-time = "2024-10-31T16:17:11Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/b0/4bc07ccd3572a2f9df7e6782f52b0c6c90dcbb803ac4a167702d7d0dfe1e/python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab", size = 41978, upload-time = "2025-06-24T04:21:07.341Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fd/b0/c337566e8c90b1260e7a17c6d20cd2c6ae2378ee3589f50b2d2da2c274bd/tinytroupe-0.0.1-py3-none-any.whl", hash = "sha256:cb07dab561bfa0be50569c304aedf7d8518103d9577c0a0401bc6b4350c94c58", size = 2027, upload-time = "2024-10-31T16:17:09.858Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/ed/539768cf28c661b5b068d66d96a2f155c4971a5d55684a514c1a0e0dec2f/python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc", size = 20556, upload-time = "2025-06-24T04:21:06.073Z" },
 ]
