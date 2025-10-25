@@ -20,7 +20,7 @@ def main():
     print("="*50 + "\n")
 
     factory = TinyPersonFactory(context="A hospital in São Paulo.")
-    person = factory.generate_person("Create a Brazilian person that is a doctor, likes pets and nature and loves heavy metal.")
+    person = factory.generate_person("Create a Brazilian person named Saulo that is a doctor, likes pets and nature and loves heavy metal.")
 
     print("\n" + "="*50)
     print("Asking the doctor about their interests...")
