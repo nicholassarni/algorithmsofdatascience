@@ -1,6 +1,7 @@
 import tinytroupe
-from tinytroupe.examples import create_lisa_the_data_scientist
+from tinytroupe.examples import create_lisa_the_data_scientist, create_oscar_the_architect
 from tinytroupe.factory import TinyPersonFactory
+from tinytroupe.environment import TinyWorld
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -27,6 +28,17 @@ def main():
     print("="*50 + "\n")
 
     person.listen_and_act("Tell me about your hobbies and interests.")
+
+    print("\n" + "="*50)
+    print("Creating a chat room with Lisa and Oscar...")
+    print("="*50 + "\n")
+
+    oscar = create_oscar_the_architect()
+
+    world = TinyWorld("Chat Room", [lisa, oscar])
+    world.make_everyone_accessible()
+    lisa.listen("Talk to Oscar to know more about him")
+    world.run(4)
 
 
 if __name__ == "__main__":
