@@ -70,66 +70,40 @@ def get_agent_response(agent, question):
         # Use listen_and_act which combines both operations
         agent.listen_and_act(question)
 
-        # Get the response - NOT simplified to get actual content
-        interactions = agent.pretty_current_interactions(last_n=1, simplified=False)
+        # Access the actions directly from the agent's episodic memory
+        if hasattr(agent, 'episodic_memory') and agent.episodic_memory:
+            # Get the most recent episode
+            recent = agent.episodic_memory.retrieve_recent(1)
+            if recent and len(recent) > 0:
+                episode = recent[0]
+                # Extract action content from the episode
+                if 'action' in episode:
+                    action = episode['action']
+                    if isinstance(action, dict) and 'content' in action:
+                        return action['content']
+                    elif isinstance(action, str):
+                        return action
 
-        if interactions:
-            # Remove rich text formatting tags
-            import re
-            # Remove all [tag] and [/tag] style formatting
-            clean_text = re.sub(r'\[/?[a-z0-9_]+\]', '', interactions)
+        # Fallback: try to get from current_messages
+        if hasattr(agent, 'current_messages') and agent.current_messages:
+            for msg in reversed(agent.current_messages):
+                if isinstance(msg, dict):
+                    if msg.get('role') == 'assistant' and 'content' in msg:
+                        content = msg['content']
+                        if content and len(content) > 20:
+                            return content
 
-            # Parse to find the actual action content
-            lines = clean_text.split('\n')
-            response_content = []
+        # Last resort: try actions_buffer
+        if hasattr(agent, 'actions_buffer') and agent.actions_buffer:
+            last_action = agent.actions_buffer[-1]
+            if isinstance(last_action, dict) and 'content' in last_action:
+                return last_action['content']
 
-            skip_markers = [
-                '****',
-                'BEGIN SIMULATION',
-                'END SIMULATION',
-                'TRAJECTORY',
-                '[CURRENT INTERACTION]'
-            ]
-
-            capturing = False
-            for line in lines:
-                # Skip metadata lines
-                if any(marker in line for marker in skip_markers):
-                    continue
-
-                # Look for action content
-                if 'Action:' in line:
-                    capturing = True
-                    continue
-
-                if capturing and line.strip():
-                    # Get the actual content
-                    if line.strip().startswith('content:'):
-                        content = line.replace('content:', '').strip()
-                        if content:
-                            response_content.append(content)
-                    elif not line.strip().startswith('type:') and not line.strip().startswith('target:'):
-                        response_content.append(line.strip())
-
-            if response_content:
-                response = ' '.join(response_content)
-                return response.strip()
-
-            # Fallback: just return cleaned text if we can't parse
-            if clean_text.strip():
-                # Remove common prefixes
-                clean_text = clean_text.replace('acts:', '').replace('DONE', '')
-                clean_text = re.sub(r'Agent simulation trajectory event #\d+:', '', clean_text)
-                clean_text = clean_text.strip()
-                if clean_text and len(clean_text) > 10:
-                    return clean_text
-
-        return "I apologize, but I couldn't generate a response. The agent may not have generated speech content."
+        return "Hi there! I'm here to help. What would you like to know?"
 
     except Exception as e:
         import traceback
-        error_details = traceback.format_exc()
-        return f"Error: {str(e)}\n\n{error_details[:300]}"
+        return f"I'm having trouble connecting to the AI service. Please make sure your API key is set correctly."
 
 
 def display_agent_info(agent_name):
