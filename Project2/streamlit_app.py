@@ -20,8 +20,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tinytrou
 import tinytroupe
 from tinytroupe.agent import TinyPerson
 
-# Load environment variables
-load_dotenv()
+# Load environment variables - works both locally and on Streamlit Cloud
+if hasattr(st, 'secrets') and 'OPENAI_API_KEY' in st.secrets:
+    # Running on Streamlit Cloud with secrets
+    os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
+else:
+    # Running locally with .env file
+    load_dotenv()
 
 # Page configuration
 st.set_page_config(
