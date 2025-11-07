@@ -67,41 +67,58 @@ def get_agent_response(agent, question):
         str: Agent's response
     """
     try:
-        # Have the agent listen and act on the question
-        agent.listen_and_act(question)
+        # Clear previous interactions to get a fresh response
+        agent.clear_interactions()
 
-        # Get the agent's response from their recent actions
-        # TinyPerson stores actions in the episodic_memory
-        if hasattr(agent, 'episodic_memory') and agent.episodic_memory:
-            # Get the most recent memory entry
-            recent_memories = agent.episodic_memory.retrieve_recent(1)
-            if recent_memories:
-                # Extract the action from the memory
-                for memory in recent_memories:
-                    if 'action' in memory and 'content' in memory['action']:
-                        return memory['action']['content']
-                    elif 'content' in memory:
-                        return memory['content']
+        # Have the agent listen to the question
+        agent.listen(question)
 
-        # Fallback: try to get from current_messages
-        if hasattr(agent, 'current_messages') and agent.current_messages:
-            last_message = agent.current_messages[-1]
-            if isinstance(last_message, dict) and 'content' in last_message:
-                return last_message['content']
-            elif isinstance(last_message, str):
-                return last_message
+        # Make the agent act/respond (this generates the actual response)
+        agent.act()
 
-        # If we still don't have a response, try actions_buffer
+        # Get the response from the agent's current interactions
+        interactions = agent.pretty_current_interactions()
+
+        # Parse the interactions to extract the actual response
+        if interactions:
+            # The interactions contain the agent's thoughts and responses
+            # Extract just the TALK action content
+            lines = interactions.split('\n')
+            response_lines = []
+            in_talk_section = False
+
+            for line in lines:
+                if 'TALK:' in line or 'SAY:' in line:
+                    in_talk_section = True
+                    # Extract the content after TALK: or SAY:
+                    if ':' in line:
+                        content = line.split(':', 1)[1].strip()
+                        if content:
+                            response_lines.append(content)
+                elif in_talk_section and line.strip() and not line.strip().startswith('['):
+                    response_lines.append(line.strip())
+                elif line.strip().startswith('[') and in_talk_section:
+                    break
+
+            if response_lines:
+                return ' '.join(response_lines)
+
+        # Fallback: try to get from actions_buffer
         if hasattr(agent, 'actions_buffer') and agent.actions_buffer:
             last_action = agent.actions_buffer[-1]
-            if isinstance(last_action, dict) and 'content' in last_action:
-                return last_action['content']
+            if isinstance(last_action, dict):
+                if 'content' in last_action:
+                    return last_action['content']
+                elif 'action' in last_action and 'content' in last_action['action']:
+                    return last_action['action']['content']
             return str(last_action)
 
-        return "I apologize, but I couldn't generate a response at this time. Please try again."
+        return "I apologize, but I couldn't generate a response at this time. Please make sure your OpenAI API key is configured."
 
     except Exception as e:
-        return f"Error generating response: {str(e)}. Please check your OpenAI API key in Settings."
+        import traceback
+        error_details = traceback.format_exc()
+        return f"Error: {str(e)}\n\nPlease check that your OPENAI_API_KEY is set in Streamlit Cloud Settings → Secrets."
 
 
 def display_agent_info(agent_name):
