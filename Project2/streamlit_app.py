@@ -70,40 +70,42 @@ def get_agent_response(agent, question):
         # Use listen_and_act which combines both operations
         agent.listen_and_act(question)
 
-        # Access the actions directly from the agent's episodic memory
-        if hasattr(agent, 'episodic_memory') and agent.episodic_memory:
-            # Get the most recent episode
-            recent = agent.episodic_memory.retrieve_recent(1)
-            if recent and len(recent) > 0:
-                episode = recent[0]
-                # Extract action content from the episode
-                if 'action' in episode:
-                    action = episode['action']
-                    if isinstance(action, dict) and 'content' in action:
-                        return action['content']
-                    elif isinstance(action, str):
-                        return action
-
-        # Fallback: try to get from current_messages
+        # Get the raw current messages from OpenAI API
         if hasattr(agent, 'current_messages') and agent.current_messages:
+            # Look for the last assistant message that isn't info/metadata
             for msg in reversed(agent.current_messages):
-                if isinstance(msg, dict):
-                    if msg.get('role') == 'assistant' and 'content' in msg:
-                        content = msg['content']
-                        if content and len(content) > 20:
+                if isinstance(msg, dict) and msg.get('role') == 'assistant':
+                    content = msg.get('content', '')
+                    # Skip info messages
+                    if content and 'Info:' not in content and 'there were other messages' not in content:
+                        if len(content) > 10:
                             return content
 
-        # Last resort: try actions_buffer
+        # Try episodic memory with full content
+        if hasattr(agent, 'episodic_memory') and agent.episodic_memory:
+            recent = agent.episodic_memory.retrieve_all()
+            if recent:
+                # Get the very last action
+                for episode in reversed(recent):
+                    if 'action' in episode:
+                        action = episode['action']
+                        if isinstance(action, dict) and 'content' in action:
+                            content = action['content']
+                            if 'Info:' not in content and len(content) > 10:
+                                return content
+
+        # Access the raw actions buffer
         if hasattr(agent, 'actions_buffer') and agent.actions_buffer:
-            last_action = agent.actions_buffer[-1]
-            if isinstance(last_action, dict) and 'content' in last_action:
-                return last_action['content']
+            for action in reversed(agent.actions_buffer):
+                if isinstance(action, dict) and 'content' in action:
+                    content = action['content']
+                    if 'Info:' not in content and len(content) > 10:
+                        return content
 
         return "Hi there! I'm here to help. What would you like to know?"
 
     except Exception as e:
-        import traceback
-        return f"I'm having trouble connecting to the AI service. Please make sure your API key is set correctly."
+        return f"I'm having trouble connecting. Please check your API key configuration."
 
 
 def display_agent_info(agent_name):
