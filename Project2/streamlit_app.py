@@ -71,46 +71,53 @@ def get_agent_response(agent, question):
         agent.listen_and_act(question)
 
         # Get the response from the agent's current interactions
-        interactions = agent.pretty_current_interactions(last_n=1)
+        interactions = agent.pretty_current_interactions(last_n=1, simplified=True)
 
-        # Parse the interactions to extract the actual response
         if interactions:
+            # Clean up the output by removing simulation metadata
             lines = interactions.split('\n')
-            response_lines = []
-            capture_next = False
+            clean_lines = []
 
-            for i, line in enumerate(lines):
-                # Look for TALK, SAY, or SAID actions
-                if 'TALK:' in line or 'SAY:' in line or 'SAID:' in line:
-                    # Extract content on the same line
-                    if ':' in line:
-                        content = line.split(':', 1)[1].strip()
-                        if content and not content.startswith('*'):
-                            response_lines.append(content)
-                    capture_next = True
+            skip_markers = [
+                '****',
+                'BEGIN SIMULATION',
+                'END SIMULATION',
+                'TRAJECTORY',
+                'Agent simulation',
+                '[CURRENT INTERACTION]',
+                'Date',
+                'Event #'
+            ]
 
-                # Capture content lines that follow TALK/SAY/SAID
-                elif capture_next and line.strip():
-                    # Stop if we hit another action or metadata
-                    if line.strip().startswith('[') or line.strip().startswith('Action:') or line.strip().startswith('Agent '):
-                        break
-                    if not line.strip().startswith('*'):
-                        response_lines.append(line.strip())
+            for line in lines:
+                # Skip lines with metadata markers
+                if any(marker in line for marker in skip_markers):
+                    continue
 
-            if response_lines:
-                # Join and clean up the response
-                response = ' '.join(response_lines)
-                # Remove any remaining asterisks or metadata
-                response = response.replace('****', '').strip()
-                return response
+                # Skip empty lines
+                if not line.strip():
+                    continue
 
-        return "I apologize, but I couldn't generate a response. Please try again."
+                # Keep lines that look like agent speech/actions
+                if line.strip():
+                    clean_lines.append(line.strip())
+
+            # Join the clean lines
+            if clean_lines:
+                response = '\n'.join(clean_lines)
+                # Additional cleanup
+                response = response.replace('TALK:', '').replace('SAY:', '').replace('SAID:', '')
+                response = response.strip()
+
+                if response:
+                    return response
+
+        return "I apologize, but I couldn't generate a response. Please make sure the OpenAI API is responding correctly."
 
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        # Return detailed error for debugging
-        return f"Error: {str(e)}\n\nPlease check your OpenAI API key is set correctly."
+        return f"Error: {str(e)}"
 
 
 def display_agent_info(agent_name):
