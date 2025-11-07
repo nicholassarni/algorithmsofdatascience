@@ -75,42 +75,42 @@ def get_agent_response(agent, question):
 
         # Parse the interactions to extract the actual response
         if interactions:
-            # The interactions contain the agent's thoughts and responses
-            # Extract just the TALK action content
             lines = interactions.split('\n')
             response_lines = []
-            in_talk_section = False
+            capture_next = False
 
-            for line in lines:
+            for i, line in enumerate(lines):
+                # Look for TALK, SAY, or SAID actions
                 if 'TALK:' in line or 'SAY:' in line or 'SAID:' in line:
-                    in_talk_section = True
-                    # Extract the content after TALK:/SAY:/SAID:
+                    # Extract content on the same line
                     if ':' in line:
                         content = line.split(':', 1)[1].strip()
-                        if content:
+                        if content and not content.startswith('*'):
                             response_lines.append(content)
-                elif in_talk_section and line.strip() and not line.strip().startswith('['):
-                    response_lines.append(line.strip())
-                elif line.strip().startswith('[') and in_talk_section:
-                    break
+                    capture_next = True
+
+                # Capture content lines that follow TALK/SAY/SAID
+                elif capture_next and line.strip():
+                    # Stop if we hit another action or metadata
+                    if line.strip().startswith('[') or line.strip().startswith('Action:') or line.strip().startswith('Agent '):
+                        break
+                    if not line.strip().startswith('*'):
+                        response_lines.append(line.strip())
 
             if response_lines:
-                return ' '.join(response_lines)
+                # Join and clean up the response
+                response = ' '.join(response_lines)
+                # Remove any remaining asterisks or metadata
+                response = response.replace('****', '').strip()
+                return response
 
-        # If no TALK action found, return the full interaction text
-        if interactions and interactions.strip():
-            # Clean up the output
-            clean_output = interactions.replace('[CURRENT INTERACTION]', '').strip()
-            if clean_output:
-                return clean_output
-
-        return "I apologize, but I couldn't generate a response. Please check that your OpenAI API key is correctly set."
+        return "I apologize, but I couldn't generate a response. Please try again."
 
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
         # Return detailed error for debugging
-        return f"Error: {str(e)}\n\nDetails: {error_details[:500]}"
+        return f"Error: {str(e)}\n\nPlease check your OpenAI API key is set correctly."
 
 
 def display_agent_info(agent_name):
