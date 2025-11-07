@@ -67,17 +67,11 @@ def get_agent_response(agent, question):
         str: Agent's response
     """
     try:
-        # Clear previous interactions to get a fresh response
-        agent.clear_interactions()
-
-        # Have the agent listen to the question
-        agent.listen(question)
-
-        # Make the agent act/respond (this generates the actual response)
-        agent.act()
+        # Use listen_and_act which combines both operations
+        agent.listen_and_act(question)
 
         # Get the response from the agent's current interactions
-        interactions = agent.pretty_current_interactions()
+        interactions = agent.pretty_current_interactions(last_n=1)
 
         # Parse the interactions to extract the actual response
         if interactions:
@@ -88,9 +82,9 @@ def get_agent_response(agent, question):
             in_talk_section = False
 
             for line in lines:
-                if 'TALK:' in line or 'SAY:' in line:
+                if 'TALK:' in line or 'SAY:' in line or 'SAID:' in line:
                     in_talk_section = True
-                    # Extract the content after TALK: or SAY:
+                    # Extract the content after TALK:/SAY:/SAID:
                     if ':' in line:
                         content = line.split(':', 1)[1].strip()
                         if content:
@@ -103,22 +97,20 @@ def get_agent_response(agent, question):
             if response_lines:
                 return ' '.join(response_lines)
 
-        # Fallback: try to get from actions_buffer
-        if hasattr(agent, 'actions_buffer') and agent.actions_buffer:
-            last_action = agent.actions_buffer[-1]
-            if isinstance(last_action, dict):
-                if 'content' in last_action:
-                    return last_action['content']
-                elif 'action' in last_action and 'content' in last_action['action']:
-                    return last_action['action']['content']
-            return str(last_action)
+        # If no TALK action found, return the full interaction text
+        if interactions and interactions.strip():
+            # Clean up the output
+            clean_output = interactions.replace('[CURRENT INTERACTION]', '').strip()
+            if clean_output:
+                return clean_output
 
-        return "I apologize, but I couldn't generate a response at this time. Please make sure your OpenAI API key is configured."
+        return "I apologize, but I couldn't generate a response. Please check that your OpenAI API key is correctly set."
 
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        return f"Error: {str(e)}\n\nPlease check that your OPENAI_API_KEY is set in Streamlit Cloud Settings → Secrets."
+        # Return detailed error for debugging
+        return f"Error: {str(e)}\n\nDetails: {error_details[:500]}"
 
 
 def display_agent_info(agent_name):
