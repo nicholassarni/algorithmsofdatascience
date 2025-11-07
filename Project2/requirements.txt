@@ -1,4 +1,10 @@
 streamlit>=1.51.0
 python-dotenv>=1.1.1
+pandas
 openai>=1.65
-git+https://github.com/microsoft/tinytroupe.git
+tiktoken
+msal
+rich
+requests
+chevron
+pydantic
