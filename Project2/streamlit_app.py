@@ -66,24 +66,42 @@ def get_agent_response(agent, question):
     Returns:
         str: Agent's response
     """
-    # Clear any previous stimuli to ensure clean response
-    agent.clear_stimulus()
+    try:
+        # Have the agent listen and act on the question
+        agent.listen_and_act(question)
 
-    # Have the agent listen and act on the question
-    agent.listen_and_act(question)
+        # Get the agent's response from their recent actions
+        # TinyPerson stores actions in the episodic_memory
+        if hasattr(agent, 'episodic_memory') and agent.episodic_memory:
+            # Get the most recent memory entry
+            recent_memories = agent.episodic_memory.retrieve_recent(1)
+            if recent_memories:
+                # Extract the action from the memory
+                for memory in recent_memories:
+                    if 'action' in memory and 'content' in memory['action']:
+                        return memory['action']['content']
+                    elif 'content' in memory:
+                        return memory['content']
 
-    # Get the most recent action from the agent's current messages
-    if agent.current_messages and len(agent.current_messages) > 0:
-        # The response is typically in the last message
-        last_message = agent.current_messages[-1]
-        if 'content' in last_message:
-            response = last_message['content']
-        else:
-            response = str(last_message)
-    else:
-        response = "I apologize, but I couldn't generate a response at this time."
+        # Fallback: try to get from current_messages
+        if hasattr(agent, 'current_messages') and agent.current_messages:
+            last_message = agent.current_messages[-1]
+            if isinstance(last_message, dict) and 'content' in last_message:
+                return last_message['content']
+            elif isinstance(last_message, str):
+                return last_message
 
-    return response
+        # If we still don't have a response, try actions_buffer
+        if hasattr(agent, 'actions_buffer') and agent.actions_buffer:
+            last_action = agent.actions_buffer[-1]
+            if isinstance(last_action, dict) and 'content' in last_action:
+                return last_action['content']
+            return str(last_action)
+
+        return "I apologize, but I couldn't generate a response at this time. Please try again."
+
+    except Exception as e:
+        return f"Error generating response: {str(e)}. Please check your OpenAI API key in Settings."
 
 
 def display_agent_info(agent_name):
