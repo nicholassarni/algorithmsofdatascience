@@ -8,3 +8,8 @@ rich
 requests
 chevron
 pydantic
+pytest
+pytest-cov
+markdown
+textdistance
+scipy
