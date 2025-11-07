@@ -17,3 +17,7 @@ __pycache__/
 .idea/
 *.swp
 *.swo
+
+# Output files
+conversation_full_output.txt
+conversation_output.txt
