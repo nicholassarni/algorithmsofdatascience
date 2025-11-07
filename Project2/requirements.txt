@@ -13,3 +13,8 @@ pytest-cov
 markdown
 textdistance
 scipy
+llama-index
+llama-index-embeddings-huggingface
+llama-index-readers-web
+llama-index-embeddings-azure-openai
+llama-index-embeddings-openai
