@@ -45,8 +45,13 @@ if 'agents_loaded' not in st.session_state:
 @st.cache_resource
 def load_agents():
     """Load the customer service agent personas from JSON specifications."""
-    sunny = TinyPerson.load_specification("./agents/sunny.agent.json")
-    alex = TinyPerson.load_specification("./agents/alex.agent.json")
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    agents_dir = os.path.join(script_dir, "agents")
+
+    # Load agents using absolute paths
+    sunny = TinyPerson.load_specification(os.path.join(agents_dir, "sunny.agent.json"))
+    alex = TinyPerson.load_specification(os.path.join(agents_dir, "alex.agent.json"))
     return sunny, alex
 
 
