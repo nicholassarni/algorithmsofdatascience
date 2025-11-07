@@ -70,54 +70,66 @@ def get_agent_response(agent, question):
         # Use listen_and_act which combines both operations
         agent.listen_and_act(question)
 
-        # Get the response from the agent's current interactions
-        interactions = agent.pretty_current_interactions(last_n=1, simplified=True)
+        # Get the response - NOT simplified to get actual content
+        interactions = agent.pretty_current_interactions(last_n=1, simplified=False)
 
         if interactions:
-            # Clean up the output by removing simulation metadata
-            lines = interactions.split('\n')
-            clean_lines = []
+            # Remove rich text formatting tags
+            import re
+            # Remove all [tag] and [/tag] style formatting
+            clean_text = re.sub(r'\[/?[a-z0-9_]+\]', '', interactions)
+
+            # Parse to find the actual action content
+            lines = clean_text.split('\n')
+            response_content = []
 
             skip_markers = [
                 '****',
                 'BEGIN SIMULATION',
                 'END SIMULATION',
                 'TRAJECTORY',
-                'Agent simulation',
-                '[CURRENT INTERACTION]',
-                'Date',
-                'Event #'
+                '[CURRENT INTERACTION]'
             ]
 
+            capturing = False
             for line in lines:
-                # Skip lines with metadata markers
+                # Skip metadata lines
                 if any(marker in line for marker in skip_markers):
                     continue
 
-                # Skip empty lines
-                if not line.strip():
+                # Look for action content
+                if 'Action:' in line:
+                    capturing = True
                     continue
 
-                # Keep lines that look like agent speech/actions
-                if line.strip():
-                    clean_lines.append(line.strip())
+                if capturing and line.strip():
+                    # Get the actual content
+                    if line.strip().startswith('content:'):
+                        content = line.replace('content:', '').strip()
+                        if content:
+                            response_content.append(content)
+                    elif not line.strip().startswith('type:') and not line.strip().startswith('target:'):
+                        response_content.append(line.strip())
 
-            # Join the clean lines
-            if clean_lines:
-                response = '\n'.join(clean_lines)
-                # Additional cleanup
-                response = response.replace('TALK:', '').replace('SAY:', '').replace('SAID:', '')
-                response = response.strip()
+            if response_content:
+                response = ' '.join(response_content)
+                return response.strip()
 
-                if response:
-                    return response
+            # Fallback: just return cleaned text if we can't parse
+            if clean_text.strip():
+                # Remove common prefixes
+                clean_text = clean_text.replace('acts:', '').replace('DONE', '')
+                clean_text = re.sub(r'Agent simulation trajectory event #\d+:', '', clean_text)
+                clean_text = clean_text.strip()
+                if clean_text and len(clean_text) > 10:
+                    return clean_text
 
-        return "I apologize, but I couldn't generate a response. Please make sure the OpenAI API is responding correctly."
+        return "I apologize, but I couldn't generate a response. The agent may not have generated speech content."
 
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        return f"Error: {str(e)}"
+        return f"Error: {str(e)}\n\n{error_details[:300]}"
 
 
 def display_agent_info(agent_name):
