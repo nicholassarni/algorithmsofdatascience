@@ -10,13 +10,10 @@ Users can ask questions and receive responses based on each agent's unique perso
 """
 
 import streamlit as st
-import sys
 import os
 from dotenv import load_dotenv
 
-# Add parent directory to path to import tinytroupe
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'tinytroupe'))
-
+# Import tinytroupe - will be installed via requirements.txt
 import tinytroupe
 from tinytroupe.agent import TinyPerson
 
